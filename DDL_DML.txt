@@ -1,0 +1,72 @@
+-- 1. Tabelle für die Identitäten (Mitarbeiter/Systeme)
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY, -- In PostgreSQL: SERIAL
+    username VARCHAR(100) NOT NULL UNIQUE,
+    department VARCHAR(100),
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+-- 2. Tabelle für die Rollen (z.B. "Buchhalter", "Admin")
+CREATE TABLE roles (
+    role_id SERIAL PRIMARY KEY,
+    role_name VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- 3. Tabelle für die konkreten Rechte (z.B. "READ_FINANCE", "DELETE_USER")
+CREATE TABLE permissions (
+    permission_id SERIAL PRIMARY KEY,
+    permission_name VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- 4. Mapping-Tabelle: Welcher User hat welche Rolle? (m:n)
+CREATE TABLE user_roles (
+    user_id INT,
+    role_id INT,
+    PRIMARY KEY (user_id, role_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES roles(role_id) ON DELETE CASCADE);
+-- 5. Mapping-Tabelle: Welche Rolle beinhaltet welche Rechte? (m:n)
+CREATE TABLE role_permissions (
+    role_id INT,
+    permission_id INT,
+    PRIMARY KEY (role_id, permission_id),
+    FOREIGN KEY (role_id) REFERENCES roles(role_id) ON DELETE CASCADE,
+    FOREIGN KEY (permission_id) REFERENCES permissions(permission_id) ON DELETE CASCADE
+);
+
+-- DML
+-- Identitäten anlegen
+INSERT INTO users (username, department, is_active) VALUES
+('Anna_Admin', 'IT', TRUE),
+('Ben_Buchhalter', 'Finance', TRUE),
+('Clara_Chef', 'Management', TRUE),
+('David_Deaktiviert', 'Finance', FALSE);
+
+-- Rollen anlegen
+INSERT INTO roles (role_name) VALUES
+('System_Administrator'),
+('Finance_User'),
+('Management_Reader');
+
+-- Rechte anlegen
+INSERT INTO permissions (permission_name) VALUES
+('CREATE_USER'),
+('DELETE_USER'),
+('READ_FINANCE_DATA'),
+('WRITE_FINANCE_DATA'),
+('READ_ALL_REPORTS');
+
+-- Rollen mit Rechten verknüpfen (Welche Rolle darf was?)
+-- Admin darf User anlegen und löschen
+INSERT INTO role_permissions (role_id, permission_id) VALUES (1, 1), (1, 2);
+-- Finance darf lesen und schreiben
+INSERT INTO role_permissions (role_id, permission_id) VALUES (2, 3), (2, 4);
+-- Management darf nur lesen
+INSERT INTO role_permissions (role_id, permission_id) VALUES (3, 3), (3, 5);
+
+-- Usern ihre Rollen zuweisen
+INSERT INTO user_roles (user_id, role_id) VALUES
+(1, 1), -- Anna ist Admin
+(2, 2), -- Ben ist Finance
+(3, 3), -- Clara ist Management
+(4, 2); -- David ist (war) Finance
